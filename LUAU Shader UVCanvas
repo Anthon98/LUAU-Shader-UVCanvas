@@ -1,0 +1,113 @@
+-- I recommend having the default UV Canvas settings.
+
+-- Why is this not a module you may ask? 
+-- Due to very direct shader editing. Scroll down to lines 64 and 85 to edit.
+
+-- Screen width and height in pixels.
+local width = 50
+local height = 50
+
+local firstRun -- Used by the script to not skip the first column.
+
+-- replicate OpenGL's gl_fragCoord down left to top right positioning mechanism.
+-- ROBLOX places them from left top to right bottom. Not necessary though but stays more authentic.
+
+local pixelDimensionXY = 10
+
+local x = width * pixelDimensionXY -- Don't change.
+local y = height * pixelDimensionXY -- Don't change.
+
+-- GUI X and Y display offsets.
+local offsetX = 500
+local offsetY = 200
+
+-- Create the ScreenGUI.
+local screengui = Instance.new(
+	"ScreenGui",
+	game.Players.LocalPlayer.PlayerGui
+)
+
+local function makeCanvas(x, y)
+	local pixel = Instance.new("Frame")
+	pixel.Parent = screengui
+	pixel.Name = x .. "," .. y
+	pixel.Size = UDim2.new(0, pixelDimensionXY, 0, pixelDimensionXY)
+	pixel.Position = UDim2.new(0, offsetX + x, 0, offsetY + y)
+	pixel.BorderSizePixel = 0
+	pixel.BackgroundColor3 = Color3.new(0, 0, 0)
+end
+
+for makeY = 1, height do
+	for makeX = 1, width do
+		if x == width * pixelDimensionXY and not firstRun then
+			makeCanvas(x, y)
+			firstRun = true
+		else
+			x -= pixelDimensionXY
+			makeCanvas(x, y)
+		end
+	end
+	x = width * pixelDimensionXY
+	firstRun = nil
+	y -= pixelDimensionXY
+end
+
+local function UVgradient(x1, y1, z1, curTime)
+
+	local x = x1
+	local y = y1
+	local z = z1
+	
+	-- We first need to loop through the width and update the values.
+	for count = width * pixelDimensionXY, 0, -pixelDimensionXY do
+
+		-- Add your logic here.
+		------------------------------------------------------
+		x -= .02 + math.sin(count / 10) * math.sin(curTime / 50)
+		y -= .02 + math.sin(count / 22) * math.sin(curTime / 50)
+		z -= .02 + math.sin(count / 25) * math.sin(curTime / 50)
+		------------------------------------------------------
+
+		for k, v in ipairs(screengui:GetDescendants()) do
+			local xComponent = string.match(v.Name, "(.*),")
+			if xComponent == tostring(count) then
+				v.BackgroundColor3 = Color3.new(x, y, z)
+			end
+		end
+	end
+	-- Reset values.
+	x = x1
+	y = y1
+	z = z1
+	-- After the width, we can update the height and calculate the new values minus it's current background RGB values IF needed.
+	for count = height * pixelDimensionXY, 0, -pixelDimensionXY do
+
+		-- Add your logic here.
+		------------------------------------------------------
+		x -= .02 + math.cos(count / 46) * math.cos(curTime / 55)
+		y -= .02 + math.sin(count / 36) * math.cos(curTime / 55)
+		z -= .02 + math.cos(count / 45) * math.cos(curTime / 55)
+		------------------------------------------------------
+
+		for k, v in ipairs(screengui:GetDescendants()) do
+			local yComponent = string.match(v.Name, ",(.*)")
+			if yComponent == tostring(count) then
+				-- Btw, you don't have to subtract by all the existing RGB value, you can do Color3.new(v.BackgroundColor3.R - x, y, z)
+				v.BackgroundColor3 = Color3.new(v.BackgroundColor3.R - x, v.BackgroundColor3.G - y, v.BackgroundColor3.B - z)
+			end
+		end
+	end
+end
+
+local x = 0
+local y = 0
+local z = 0
+
+for gameTime = 1, 100 do
+	wait() -- You may want to adjust the wait, I don't recommend renderstepping this due already immense lag.
+	x -= .01
+	y -= .01
+	z -= .01
+	local curTime = gameTime * 5
+	UVgradient(x, y, z, curTime)
+end
